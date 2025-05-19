@@ -33,21 +33,50 @@ def parse_prompt(prompt):
 
 def llm_inference(model, prompts):
     '''
-    This function leverages a large language model (LLM) to generate responses for a given list of prompts.
-    You can integrate your preferred LLM within this function.
+    This function leverages Qwen2.5-0.5B-Instruct to generate responses for a given list of prompts.
 
     Args:
-        model: The LLM to be used for inference.
+        model: Ignored (kept for compatibility).
         prompts: A list of prompts for which the LLM will generate responses.
 
     Returns:
         A list of dictionaries, each containing the original prompt, extracted domain and scenario, 
         and a JSON-formatted enhanced schema.
     '''
-    
-    # Generate responses using the LLM (each prompt corresponds to one response)
-    responses = None  # Replace this with the actual LLM call, e.g., model.generate(prompts, temperature=0, n=1)
+    responses = []
 
+    tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen2.5-0.5B-Instruct", trust_remote_code=True)
+    model = AutoModelForCausalLM.from_pretrained(
+        "Qwen/Qwen2.5-0.5B-Instruct",
+        torch_dtype=torch.bfloat16,
+        trust_remote_code=True
+    ).to("cuda:0")
+    model.eval()
+    model = torch.compile(model)
+
+    batch_size = 8 
+
+    for i in range(0, len(prompts), batch_size):
+        batch_prompts = prompts[i:i + batch_size]
+        print(f"Generating schemas {i+1} to {i+len(batch_prompts)} of {len(prompts)}")
+
+
+        # Tokenize the batch
+        inputs = tokenizer(batch_prompts, return_tensors="pt", padding=True, padding_side ='left', truncation=True).to(model.device)
+
+        # Generate output in batch
+        output_ids = model.generate(
+            **inputs,
+            eos_token_id=tokenizer.eos_token_id,
+            max_new_tokens=2048, temperature=0.3, repetition_penalty=1.1
+        )
+
+        # Decode and remove input portion from each sample
+        for j in range(len(batch_prompts)):
+            input_len = len(inputs.input_ids[j])
+            output = output_ids[j][input_len:]
+            response = tokenizer.decode(output, skip_special_tokens=True)
+            responses.append(response)
 
     # Initialize a list to store the processed results
     results = []

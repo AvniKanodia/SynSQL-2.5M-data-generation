@@ -5,7 +5,6 @@ import re
 import time
 import json_repair
 import torch
-torch.cuda.set_device(3)
 from transformers import AutoTokenizer, AutoModelForCausalLM
 import random
 from tqdm import tqdm
@@ -73,7 +72,7 @@ def llm_inference(model, prompts):
         output_ids = model.generate(
             **inputs,
             eos_token_id=tokenizer.eos_token_id,
-            max_new_tokens=2048, temperature=0.3, repetition_penalty=1.1
+            max_new_tokens=5000, temperature=0.3, repetition_penalty=1.1
         )
 
         # Decode and remove input portion from each sample
@@ -109,6 +108,7 @@ def llm_inference(model, prompts):
     return results
 
 if __name__ == '__main__':
+    torch.cuda.set_device(3)
     parser = argparse.ArgumentParser()
     parser.add_argument("--model", type = str)
     args = parser.parse_args()

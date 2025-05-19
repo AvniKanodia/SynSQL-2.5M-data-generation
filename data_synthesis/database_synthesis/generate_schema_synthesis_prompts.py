@@ -2,7 +2,7 @@ import json
 import random
 import numpy as np
 
-def generate_a_normal_integer(mean = 10, std_dev = 4, lower_bound = 1, upper_bound = 20):
+def generate_a_normal_integer(mean = 5, std_dev = 2, lower_bound = 1, upper_bound = 7):
     sample = np.random.normal(mean, std_dev)
     sample = np.clip(sample, lower_bound, upper_bound)
     
